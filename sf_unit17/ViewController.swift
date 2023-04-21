@@ -7,7 +7,7 @@
 
 import UIKit
 
-extension Float {
+extension Double {
     var cleanValue: String {
          String(format: "%.0f", self)
     }
@@ -24,13 +24,19 @@ class ViewController: UIViewController {
     @IBOutlet weak var buttonDivision: UIButton!
     @IBOutlet weak var buttonDegree: UIButton!
     
-    var screenValue : Float = 0.0
+    var firstValue : Double = 0.0
+    var secondValue : Double = 0.0
+    var degreeValue : Double = 0.0
+    var resultValue : Double = 0.0
+    
+    var operation : Bool = false
     var plus : Bool = false
     var minus : Bool = false
     var division : Bool = false
     var multiplication : Bool = false
     var degree : Bool = false
     var equal : Bool = false
+    var error : Bool = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,22 +50,40 @@ class ViewController: UIViewController {
     
     @IBAction func buttonDot(_ sender: UIButton) {
         var screen : String = labelView.text!
+        screen = equal ? "0" : labelView.text!
+        if equal{equal = false}
         if !screen.contains("."){
             screen += "."
         }
         labelView.text = screen
     }
     
+    func mathResult (_ screen: String) -> String{
+        var sign : String = ""
+        if plus{
+            sign = "+"
+        }
+        if minus{
+            sign = "-"
+        }
+        if multiplication{
+            sign = "*"
+        }
+        if division{
+            sign = "/"
+        }
+        if degree{
+            sign = "n"
+        }
+        return math(sign, screen)
+    }
+    
     @IBAction func buttonEqual(_ sender: UIButton) {
         var screen : String = labelView.text!
-        if plus{
-            let secondValue : Float = Float(screen)!
-            screenValue += secondValue
-            screen = screenValue.truncatingRemainder(dividingBy: 1) == 0 ? screenValue.cleanValue : String(screenValue)
-            labelResult.text = ""
-            labelView.text = screen
-        }
-        buttonColorReset()
+        screen = mathResult(screen)
+        buttonColorReset("all")
+        labelResult.text = ""
+        labelView.text = screen
         equal = true
     }
     
@@ -75,18 +99,55 @@ class ViewController: UIViewController {
         buttonNum("3")
     }
     
+    func math (_ sign : String, _ screen: String) -> String{
+        secondValue = Double(screen)!
+        if labelResult.text != ""{
+            firstValue = Double(labelResult.text!)!
+        }
+        switch sign{
+        case "n":
+            resultValue = pow(degreeValue, secondValue)
+        case "+":
+            resultValue = firstValue + secondValue
+        case "-":
+            resultValue = firstValue - secondValue
+        case "*":
+            resultValue = firstValue * secondValue
+        case "/":
+            resultValue = firstValue / secondValue
+        case "root":
+            resultValue = sqrt(secondValue)
+        case "fract":
+            resultValue = 1/secondValue
+        case "perc":
+            if labelResult.text != ""{
+                firstValue = Double(labelResult.text!)!
+                resultValue = firstValue / 100 * secondValue
+            }
+            else{
+                firstValue = Double(screen)!
+                resultValue = firstValue / 100
+            }
+        default: break
+        }
+        return resultValue.truncatingRemainder(dividingBy: 1) == 0 ? resultValue.cleanValue : String(resultValue)
+    }
+    
     @IBAction func buttonPlus(_ sender: UIButton) {
         var screen : String = labelView.text!
+        if operation{
+            screen = mathResult(screen)
+        }
         if !plus {
-            screenValue = Float(screen)!
+            firstValue = Double(screen)!
             plus = true
+            operation = true
             buttonPlus.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
         }
-        else{
-            let secondValue : Float = Float(screen)!
-            screenValue += secondValue
-            screen = screenValue.truncatingRemainder(dividingBy: 1) == 0 ? screenValue.cleanValue : String(screenValue)
-        }
+        buttonColorReset("-")
+        buttonColorReset("*")
+        buttonColorReset("/")
+        buttonColorReset("n")
         labelResult.text = screen
         screen = "0"
         labelView.text = screen
@@ -106,16 +167,19 @@ class ViewController: UIViewController {
     
     @IBAction func buttonMinus(_ sender: UIButton) {
         var screen : String = labelView.text!
+        if operation{
+            screen = mathResult(screen)
+        }
         if !minus {
-            screenValue = Float(screen)!
+            firstValue = Double(screen)!
             minus = true
+            operation = true
             buttonMinus.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
         }
-        else{
-            let secondValue : Float = Float(screen)!
-            screenValue -= secondValue
-            screen = screenValue.truncatingRemainder(dividingBy: 1) == 0 ? screenValue.cleanValue : String(screenValue)
-        }
+        buttonColorReset("+")
+        buttonColorReset("*")
+        buttonColorReset("/")
+        buttonColorReset("n")
         labelResult.text = screen
         screen = "0"
         labelView.text = screen
@@ -135,16 +199,19 @@ class ViewController: UIViewController {
     
     @IBAction func buttonMultiplication(_ sender: UIButton) {
         var screen : String = labelView.text!
-        if !multiplication {
-            screenValue = Float(screen)!
+        if operation{
+            screen = mathResult(screen)
+        }
+        if !multiplication  {
+            firstValue = Double(screen)!
             multiplication = true
+            operation = true
             buttonMultiplication.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
         }
-        else{
-            let secondValue : Float = Float(screen)!
-            screenValue *= secondValue
-            screen = screenValue.truncatingRemainder(dividingBy: 1) == 0 ? screenValue.cleanValue : String(screenValue)
-        }
+        buttonColorReset("+")
+        buttonColorReset("-")
+        buttonColorReset("/")
+        buttonColorReset("n")
         labelResult.text = screen
         screen = "0"
         labelView.text = screen
@@ -153,8 +220,10 @@ class ViewController: UIViewController {
     @IBAction func buttonC(_ sender: UIButton) {
         labelView.text = "0"
         labelResult.text = ""
-        screenValue = Float(labelView.text!)!
-        buttonColorReset()
+        firstValue = 0.0
+        secondValue = 0.0
+        resultValue = 0.0
+        buttonColorReset("all")
     }
     
     @IBAction func buttonSign(_ sender: UIButton) {
@@ -166,21 +235,24 @@ class ViewController: UIViewController {
     }
     
     @IBAction func buttonPercent(_ sender: UIButton) {
+        var screen : String = labelView.text!
+        screen = math("perc", screen)
+        labelView.text = screen
+        
     }
     
     @IBAction func buttonDivision(_ sender: UIButton) {
         var screen : String = labelView.text!
         if screen != "0"
         {
-            if !division {
-                screenValue = Float(screen)!
-                plus = true
-                buttonDivision.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
+            if operation{
+                screen = mathResult(screen)
             }
-            else{
-                let secondValue : Float = Float(screen)!
-                screenValue /= secondValue
-                screen = screenValue.truncatingRemainder(dividingBy: 1) == 0 ? screenValue.cleanValue : String(screenValue)
+            if !division  {
+                firstValue = Double(screen)!
+                division = true
+                operation = true
+                buttonDivision.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
             }
             labelResult.text = screen
             screen = "0"
@@ -188,16 +260,38 @@ class ViewController: UIViewController {
         }
         else{
             labelView.text = "Error!"
+            error = true
         }
     }
     
     @IBAction func buttonRoot(_ sender: UIButton) {
+        var screen : String = labelView.text!
+        screen = math("root", screen)
+        labelView.text = screen
+        equal = true
     }
     
     @IBAction func buttonDegree(_ sender: UIButton) {
+        var screen : String = labelView.text!
+        if !degree  {
+            degreeValue = Double(screen)!
+            degree = true
+            operation = true
+            buttonDegree.backgroundColor = UIColor(red: 0.0, green: 1.0, blue: 0.0, alpha: 1)
+        }
+        else{
+            screen = mathResult(screen)
+        }
+        labelResult.text = screen
+        screen = "0"
+        labelView.text = screen
     }
     
     @IBAction func buttonFraction(_ sender: UIButton) {
+        var screen : String = labelView.text!
+        screen = math("fract", screen)
+        labelView.text = screen
+        equal = true
     }
     
     @IBAction func buttonDel(_ sender: UIButton) {
@@ -213,40 +307,59 @@ class ViewController: UIViewController {
     
     func buttonNum (_ num : String){
         var screen : String = ""
-        if equal{
-            screen = "0"
-            equal = false
-        }
-        else{
-            screen = labelView.text!
-        }
+        screen = equal ? "0" : labelView.text!
+        if equal{equal = false}
+        
         if num == "0"{
-            if screen != num{
-                screen += num
-            }
+            if screen != num{screen += num}
         }
         else{
-            if screen == "0"{
-                screen = num
-            }
-            else{
-                screen += num
-            }
+            screen = screen == "0" ? num : screen + num
         }
         labelView.text = screen
     }
     
-    func buttonColorReset () {
-        plus = false
-        minus = false
-        multiplication = false
-        division = false
-        degree = false
-        buttonPlus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
-        buttonMinus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
-        buttonMultiplication.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
-        buttonDivision.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
-        buttonDegree.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+    func buttonColorReset (_ sign: String) {
+        switch sign{
+        case "+":
+            plus = false
+            buttonPlus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        case "-":
+            minus = false
+            buttonMinus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        case "*":
+            multiplication = false
+            buttonMultiplication.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        case "/":
+            division = false
+            buttonDivision.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        case "n":
+            degree = false
+            buttonDegree.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        default:
+            plus = false
+            minus = false
+            multiplication = false
+            division = false
+            degree = false
+            operation = false
+            error = false
+            buttonPlus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+            buttonMinus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+            buttonMultiplication.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+            buttonDivision.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+            buttonDegree.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+        }
+//        plus = false
+//        minus = false
+//        multiplication = false
+//        division = false
+//        degree = false
+//        buttonPlus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+//        buttonMinus.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+//        buttonMultiplication.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+//        buttonDivision.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
+//        buttonDegree.backgroundColor = UIColor(red: 0.8021417856, green: 0.3212764561, blue: 0.1372393668, alpha: 1)
     }
     
 }
